@@ -3,33 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ポップアップでURLを開く</title>
+    <title>URLリストの表示と保存</title>
     <script>
+        let urls = [];
+        let currentPage = 0;
+        const pageSize = 10;
+        let popupWindows = [];
+
         async function fetchUrls() {
             try {
                 const response = await fetch('https://zhjpwlj.github.io/proxylist/list.txt');
                 const text = await response.text();
-                const urls = text.split('\n').filter(url => url.trim() !== '');
-                displayUrls(urls);
-                openPopups(urls);
+                urls = text.split('\n').filter(url => url.trim() !== '');
+                displayUrls();
+                openPopups();
             } catch (error) {
                 console.error('Error fetching URLs:', error);
             }
         }
 
-        function displayUrls(urls) {
+        function displayUrls() {
             const urlContainer = document.getElementById('url-container');
-            urls.forEach(url => {
+            urlContainer.innerHTML = '';
+
+            const start = currentPage * pageSize;
+            const end = Math.min(start + pageSize, urls.length);
+            for (let i = start; i < end; i++) {
                 const div = document.createElement('div');
-                div.innerHTML = `<label><input type="checkbox" name="url" value="${url}"> ${url}</label>`;
+                div.innerHTML = `<label><input type="checkbox" name="url" value="${urls[i]}"> ${urls[i]}</label>`;
                 urlContainer.appendChild(div);
-            });
+            }
         }
 
-        async function openPopups(urls) {
-            for (let i = 0; i < Math.min(urls.length, 10); i++) {
-                window.open(urls[i], `popup${i + 1}`, 'width=300,height=200');
+        async function openPopups() {
+            closePopups();
+
+            const start = currentPage * pageSize;
+            const end = Math.min(start + pageSize, urls.length);
+            for (let i = start; i < end; i++) {
+                const popup = window.open(urls[i], `popup${i + 1}`, 'width=300,height=200');
+                popupWindows.push(popup);
             }
+        }
+
+        function closePopups() {
+            popupWindows.forEach(popup => popup.close());
+            popupWindows = [];
         }
 
         function saveSelectedUrls() {
@@ -41,6 +60,13 @@
             alert('選択されたURLが保存されました');
         }
 
+        function nextPage() {
+            currentPage++;
+            displayUrls();
+            openPopups();
+        }
+
+        window.onbeforeunload = closePopups;
         window.onload = fetchUrls;
     </script>
 </head>
@@ -48,5 +74,6 @@
     <h1>URLリストの表示と保存</h1>
     <div id="url-container"></div>
     <button onclick="saveSelectedUrls()">選択されたURLを保存</button>
+    <button onclick="nextPage()">次の10個</button>
 </body>
 </html>
