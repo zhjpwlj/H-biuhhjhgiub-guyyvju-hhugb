@@ -3,98 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL チェッカー</title>
-    <style>
-        .url-list {
-            margin: 20px 0;
-        }
-        .url-item {
-            display: flex;
-            align-items: center;
-        }
-        .status {
-            margin-left: 10px;
-        }
-    </style>
-</head>
-<body>
-    <h1>URL チェッカー</h1>
-    <div id="urlContainer" class="url-list">
-        <!-- URLリストがここに挿入されます -->
-    </div>
-
-    <button onclick="showPopup()">次の10個を確認する</button>
-
+    <title>ポップアップでURLを開く</title>
     <script>
-        const urlSource = 'https://zhjpwlj.github.io/proxylist/list.txt';
-        let urlList = [];
-        let currentIndex = 0;
-        const increment = 10;
-
         async function fetchUrls() {
             try {
-                const response = await fetch(urlSource);
+                const response = await fetch('https://zhjpwlj.github.io/proxylist/list.txt');
                 const text = await response.text();
-                urlList = text.split('\n').map(url => url.trim()).filter(url => url);
-                loadMoreUrls();
+                const urls = text.split('\n').filter(url => url.trim() !== '');
+                displayUrls(urls);
+                openPopups(urls);
             } catch (error) {
-                console.error('URLを取得できませんでした:', error);
+                console.error('Error fetching URLs:', error);
             }
         }
 
-        function loadMoreUrls() {
-            const container = document.getElementById('urlContainer');
-            container.innerHTML = ''; // 以前のURLをクリア
-            for (let i = currentIndex; i < currentIndex + increment && i < urlList.length; i++) {
-                const urlItem = document.createElement('div');
-                urlItem.className = 'url-item';
-                
-                const urlLink = document.createElement('a');
-                urlLink.href = urlList[i];
-                urlLink.target = '_blank';
-                urlLink.textContent = urlList[i];
-                
-                const status = document.createElement('span');
-                status.className = 'status';
-                status.textContent = '未確認';
-                
-                urlItem.appendChild(urlLink);
-                urlItem.appendChild(status);
-                container.appendChild(urlItem);
-            }
-            currentIndex += increment;
-        }
-
-        function showPopup() {
-            const popupWindow = window.open('', 'popup', 'width=400,height=600');
-            popupWindow.document.write('<h2>URLステータス確認</h2>');
-            for (let i = currentIndex - increment; i < currentIndex && i < urlList.length; i++) {
-                const url = urlList[i];
-                popupWindow.document.write(`
-                    <div>
-                        <label>
-                            <input type="checkbox" onclick="opener.saveStatus('${url}', this.checked)">
-                            ${url}
-                        </label>
-                    </div>
-                `);
-            }
-            popupWindow.document.write('<button onclick="window.close()">閉じる</button>');
-        }
-
-        function saveStatus(url, isChecked) {
-            const status = isChecked ? 'アクセス可能' : 'ブロック';
-            document.querySelectorAll('.url-item').forEach(item => {
-                const link = item.querySelector('a');
-                if (link.href === url) {
-                    item.querySelector('.status').textContent = status;
-                }
+        function displayUrls(urls) {
+            const urlContainer = document.getElementById('url-container');
+            urls.forEach(url => {
+                const div = document.createElement('div');
+                div.innerHTML = `<label><input type="checkbox" name="url" value="${url}"> ${url}</label>`;
+                urlContainer.appendChild(div);
             });
-            document.cookie = `${url}=${status}; path=/`;
         }
 
-        // 初回ロード
-        fetchUrls();
+        async function openPopups(urls) {
+            for (let i = 0; i < Math.min(urls.length, 10); i++) {
+                window.open(urls[i], `popup${i + 1}`, 'width=300,height=200');
+            }
+        }
+
+        function saveSelectedUrls() {
+            const selectedUrls = [];
+            document.querySelectorAll('input[name="url"]:checked').forEach(input => {
+                selectedUrls.push(input.value);
+            });
+            document.cookie = `selectedUrls=${JSON.stringify(selectedUrls)}; path=/`;
+            alert('選択されたURLが保存されました');
+        }
+
+        window.onload = fetchUrls;
     </script>
+</head>
+<body>
+    <h1>URLリストの表示と保存</h1>
+    <div id="url-container"></div>
+    <button onclick="saveSelectedUrls()">選択されたURLを保存</button>
 </body>
 </html>
