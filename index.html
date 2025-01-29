@@ -23,13 +23,13 @@
         <!-- URLリストがここに挿入されます -->
     </div>
 
-    <button onclick="loadMoreUrls()">次の25個を読み込む</button>
+    <button onclick="showPopup()">次の10個を確認する</button>
 
     <script>
         const urlSource = 'https://zhjpwlj.github.io/proxylist/list.txt';
         let urlList = [];
         let currentIndex = 0;
-        const increment = 25;
+        const increment = 10;
 
         async function fetchUrls() {
             try {
@@ -44,6 +44,7 @@
 
         function loadMoreUrls() {
             const container = document.getElementById('urlContainer');
+            container.innerHTML = ''; // 以前のURLをクリア
             for (let i = currentIndex; i < currentIndex + increment && i < urlList.length; i++) {
                 const urlItem = document.createElement('div');
                 urlItem.className = 'url-item';
@@ -62,6 +63,34 @@
                 container.appendChild(urlItem);
             }
             currentIndex += increment;
+        }
+
+        function showPopup() {
+            const popupWindow = window.open('', 'popup', 'width=400,height=600');
+            popupWindow.document.write('<h2>URLステータス確認</h2>');
+            for (let i = currentIndex - increment; i < currentIndex && i < urlList.length; i++) {
+                const url = urlList[i];
+                popupWindow.document.write(`
+                    <div>
+                        <label>
+                            <input type="checkbox" onclick="opener.saveStatus('${url}', this.checked)">
+                            ${url}
+                        </label>
+                    </div>
+                `);
+            }
+            popupWindow.document.write('<button onclick="window.close()">閉じる</button>');
+        }
+
+        function saveStatus(url, isChecked) {
+            const status = isChecked ? 'アクセス可能' : 'ブロック';
+            document.querySelectorAll('.url-item').forEach(item => {
+                const link = item.querySelector('a');
+                if (link.href === url) {
+                    item.querySelector('.status').textContent = status;
+                }
+            });
+            document.cookie = `${url}=${status}; path=/`;
         }
 
         // 初回ロード
