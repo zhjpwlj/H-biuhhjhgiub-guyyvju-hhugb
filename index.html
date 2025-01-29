@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL チェッカー</title>
+    <style>
+        .url-list {
+            margin: 20px 0;
+        }
+        .url-item {
+            display: flex;
+            align-items: center;
+        }
+        .status {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>URL チェッカー</h1>
+    <div id="urlContainer" class="url-list">
+        <!-- URLリストがここに挿入されます -->
+    </div>
+
+    <button onclick="loadMoreUrls()">次の25個を読み込む</button>
+
+    <script>
+        const urlSource = 'https://zhjpwlj.github.io/proxylist/list.txt';
+        let urlList = [];
+        let currentIndex = 0;
+        const increment = 25;
+
+        async function fetchUrls() {
+            try {
+                const response = await fetch(urlSource);
+                const text = await response.text();
+                urlList = text.split('\n').map(url => url.trim()).filter(url => url);
+                loadMoreUrls();
+            } catch (error) {
+                console.error('URLを取得できませんでした:', error);
+            }
+        }
+
+        function loadMoreUrls() {
+            const container = document.getElementById('urlContainer');
+            for (let i = currentIndex; i < currentIndex + increment && i < urlList.length; i++) {
+                const urlItem = document.createElement('div');
+                urlItem.className = 'url-item';
+                
+                const urlLink = document.createElement('a');
+                urlLink.href = urlList[i];
+                urlLink.target = '_blank';
+                urlLink.textContent = urlList[i];
+                
+                const status = document.createElement('span');
+                status.className = 'status';
+                status.textContent = '未確認';
+                
+                urlItem.appendChild(urlLink);
+                urlItem.appendChild(status);
+                container.appendChild(urlItem);
+            }
+            currentIndex += increment;
+        }
+
+        // 初回ロード
+        fetchUrls();
+    </script>
+</body>
+</html>
